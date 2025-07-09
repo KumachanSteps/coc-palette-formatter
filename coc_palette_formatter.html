@@ -166,6 +166,13 @@ function copyOutput() {
   output.select();
   document.execCommand("copy");
   alert("コピーしました");
+  
+  // 🔴 Add this line to send an event
+  gtag('event', 'copy_output', {
+    'event_category': 'button',
+    'event_label': 'コピー',
+    'value': 1
+  });
 }
 </script>
 
