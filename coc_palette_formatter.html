@@ -100,6 +100,8 @@ function formatPalette() {
   const lines = document.getElementById("input").value.split("\n");
   const categories = { dice: [], explore: [], battle: [], action: [], talk: [], knowledge: [], initial: [], status: [], damage: [] };
 
+  const presentSkills = new Set();
+
   lines.forEach(line => {
     if (line.includes("SAN") || line.includes("アイデア") || line.includes("幸運") || line.includes("知識")) {
       categories.dice.push(line);
@@ -110,12 +112,12 @@ function formatPalette() {
     } else {
       const match = line.match(/CCB<=\d+ \【(.+?)\】/);
       if (!match) return;
-      const skill = match[1].replace(/（.*?）/, '');
-      const value = parseInt(line.match(/CCB<=(\d+)/)[1]);
-      const initial = initialValues[skill] ?? -1;
-      if (initial !== -1 && value === initial) {
-        categories.initial.push(line);
-      } else if (["目星", "聞き耳", "図書館"].includes(skill)) {
+      const skillFull = match[1];
+      const skill = skillFull.replace(/（.*?）/, '');
+      presentSkills.add(skill);
+
+      // 特殊技能名に対応した分類処理
+      if (["目星", "聞き耳", "図書館"].includes(skill)) {
         categories.explore.push(line);
       } else if (["回避", "こぶし", "キック", "組み付き", "頭突き", "投擲", "マーシャルアーツ", "拳銃", "サブマシンガン", "ショットガン", "マシンガン", "ライフル"].some(s => skill.includes(s))) {
         categories.battle.push(line);
@@ -132,16 +134,9 @@ function formatPalette() {
   });
 
   // 初期値の中で入力に存在しないものを追加
-  const presentSkills = lines.map(line => {
-    const match = line.match(/CCB<=\d+ \【(.+?)\】/);
-    return match ? match[1].replace(/（.*?）/, '') : null;
-  }).filter(Boolean);
-
-  Object.entries(initialValues).forEach(([skill, value]) => {
-    if (!presentSkills.includes(skill)) {
-      categories.initial.push(`CCB<=${value} 【${skill}】`);
-    }
-  });
+  const missingInitials = Object.entries(initialValues)
+    .filter(([skill, _]) => !presentSkills.has(skill))
+    .map(([skill, value]) => `CCB<=${value} 【${skill}】`);
 
   const output = [
     "◼️ダイス", ...categories.dice,
@@ -150,7 +145,7 @@ function formatPalette() {
     "\n🟧行動技能・他", ...categories.action,
     "\n🟪交渉技能", ...categories.talk,
     "\n⬜️知識技能", ...categories.knowledge,
-    "\n========初期値========", ...categories.initial,
+    "\n========初期値========", ...missingInitials,
     "\n========能力値========", ...categories.damage, ...categories.status
   ].join("\n");
 
