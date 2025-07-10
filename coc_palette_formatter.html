@@ -148,15 +148,17 @@ function formatPalette() {
     .map(([skill, value]) => `CCB<=${value} 【${skill}】`);
 
   const output = [
-    "◼️ダイス", ...categories.dice,
-    "\n🟦探索技能", ...categories.explore,
-    "\n🟥戦闘技能", ...categories.battle,
-    "\n🟧行動技能・他", ...categories.action,
-    "\n🟪交渉技能", ...categories.talk,
-    "\n⬜️知識技能", ...categories.knowledge,
-    "\n========初期値========", ...missingInitials,
-    "\n========能力値========", ...categories.damage, ...categories.status
-  ].join("\n");
+  "◼️ダイス", ...categories.dice,
+  "\n🟦探索技能", ...categories.explore,
+  "\n🟥戦闘技能", ...categories.battle,
+  "\n🟧行動技能・他", ...categories.action,
+  "\n🟪交渉技能", ...categories.talk,
+  "\n⬜️知識技能", ...categories.knowledge,
+  "\n========初期値========", ...missingInitials,
+  "\n========能力値========", ...categories.damage, ...categories.status,
+  "\n======パラメーター化======",
+  ...["アイデア", "幸運", "知識", "目星", "聞き耳", "図書館"].map(skill => `//${skill} = ${initialValues[skill] || 0}`)
+].join("\n");
 
   document.getElementById("output").value = output;
 }
