@@ -108,72 +108,88 @@ const initialValues = {
 function formatPalette() {
   const lines = document.getElementById("input").value.split("\n");
   const categories = { dice: [], explore: [], battle: [], action: [], talk: [], knowledge: [], initial: [], status: [], damage: [] };
-
-  const presentSkills = new Set();
+  const presentSkills = new Map();
 
   lines.forEach(line => {
-    if (line.includes("SAN") || line.includes("アイデア") || line.includes("幸運") || line.includes("知識")) {
+    // SANは dice に分類して終了
+    if (line.includes("SAN")) {
       categories.dice.push(line);
-    } else if (line.match(/ダメージ判定/)) {
+      return;
+    }
+  
+    // ダメージやステータスは先に分類して終了
+    if (line.match(/ダメージ判定/)) {
       categories.damage.push(line);
-    } else if (line.includes("× 5")) {
+      return;
+    }
+    if (line.includes("× 5")) {
       categories.status.push(line);
+      return;
+    }
+  
+    // その他の技能判定
+    const match = line.match(/CCB<=([0-9]+)\s+【(.+?)】/);
+    if (!match) return;
+  
+    const [, value, skillFull] = match;
+    const skill = skillFull.replace(/（.*?）/, '');
+  
+    // presentSkills に登録
+    presentSkills.set(skill, value);
+  
+    // 「アイデア」「幸運」「知識」は dice にも分類
+    if (["アイデア", "幸運", "知識"].includes(skill)) {
+      categories.dice.push(line);
+    }
+  
+    // 各カテゴリに分類
+    if (["目星", "聞き耳", "図書館"].includes(skill)) {
+      categories.explore.push(line);
+    } else if (["回避", "こぶし", "キック", "組み付き", "頭突き", "投擲", "マーシャルアーツ", "拳銃", "サブマシンガン", "ショットガン", "マシンガン", "ライフル", "ソード", "日本刀", "ナイフ"].some(s => skill.includes(s)) || /^(小さな棍棒|大きな棍棒|小さい棍棒|大きい棍棒)/.test(skillFull)) {
+      categories.battle.push(line);
+    } else if (["応急手当", "鍵開け", "隠す", "隠れる", "忍び歩き", "写真術", "精神分析", "追跡", "登攀", "運転", "機械修理", "重機械操作", "乗馬", "水泳", "製作", "操縦", "跳躍", "電気修理", "ナビゲート", "変装"].some(s => skill.includes(s)) || /^(運転|製作|操縦)/.test(skillFull)) {
+      categories.action.push(line);
+    } else if (["言いくるめ", "信用", "説得", "値切り"].includes(skill) || /^(母国語|他の言語)(（.*?）|\(.*?\))?/.test(skillFull)) {
+      categories.talk.push(line);
+    } else if (["芸術"].includes(skill) || /^芸術/.test(skillFull)) {
+      categories.knowledge.push(line);
     } else {
-      const match = line.match(/CCB<=\d+ \【(.+?)\】/);
-      if (!match) return;
-      const skillFull = match[1];
-      const skill = skillFull.replace(/（.*?）/, '');
-      presentSkills.add(skill);
-
-      // 特殊技能名に対応した分類処理
-      if (["目星", "聞き耳", "図書館"].includes(skill)) {
-        categories.explore.push(line);
-      } else if (["回避", "こぶし", "キック", "組み付き", "頭突き", "投擲", "マーシャルアーツ", "拳銃", "サブマシンガン", "ショットガン", "マシンガン", "ライフル", "ソード", "日本刀", "ナイフ"].some(s => skill.includes(s)) || /^(小さな棍棒|大きな棍棒|小さい棍棒|大きい棍棒)/.test(skillFull)) {
-        categories.battle.push(line);
-      } else if (["応急手当", "鍵開け", "隠す", "隠れる", "忍び歩き", "写真術", "精神分析", "追跡", "登攀", "運転", "機械修理", "重機械操作", "乗馬", "水泳", "製作", "操縦", "跳躍", "電気修理", "ナビゲート", "変装"].some(s => skill.includes(s)) || /^(運転|製作|操縦)/.test(skillFull)) {
-        categories.action.push(line);
-      } else if (["言いくるめ", "信用", "説得", "値切り"].includes(skill) || /^(母国語|他の言語)(（.*?）|\(.*?\))?/.test(skillFull)) {
-        categories.talk.push(line);
-      } else if (["芸術"].includes(skill) || /^芸術/.test(skillFull)) {
-        categories.knowledge.push(line);
-      } else {
-        categories.knowledge.push(line);
-      }
+      categories.knowledge.push(line);
     }
   });
 
-  // 初期値の中で入力に存在しないものを追加
+
   const missingInitials = Object.entries(initialValues)
     .filter(([skill, _]) => !presentSkills.has(skill))
     .map(([skill, value]) => `CCB<=${value} 【${skill}】`);
 
   const output = [
-  "◼️ダイス", ...categories.dice,
-  "\n🟦探索技能", ...categories.explore,
-  "\n🟥戦闘技能", ...categories.battle,
-  "\n🟧行動技能・他", ...categories.action,
-  "\n🟪交渉技能", ...categories.talk,
-  "\n⬜️知識技能", ...categories.knowledge,
-  "\n========初期値========", ...missingInitials,
-  "\n========能力値========", ...categories.damage, ...categories.status,
-  "\n======パラメーター化======",
-  ...["アイデア", "幸運", "知識", "目星", "聞き耳", "図書館"].map(skill => `//${skill} = ${initialValues[skill] || 0}`)
-].join("\n");
+    "◼️ダイス", ...categories.dice,
+    "\n🟦探索技能", ...categories.explore,
+    "\n🟥戦闘技能", ...categories.battle,
+    "\n🟧行動技能・他", ...categories.action,
+    "\n🟪交渉技能", ...categories.talk,
+    "\n⬜️知識技能", ...categories.knowledge,
+    "\n========初期値========", ...missingInitials,
+    "\n========能力値========", ...categories.damage, ...categories.status,
+    "\n=====パラメータ化=====",
+    ...["アイデア", "幸運", "知識", "目星", "聞き耳", "図書館"].map(skill => `//${skill} = ${presentSkills.get(skill) || initialValues[skill] || 0}`)
+  ].join("\n");
 
   document.getElementById("output").value = output;
 }
 
 function copyOutput() {
   const output = document.getElementById("output");
-  output.select();
-  document.execCommand("copy");
-  alert("コピーしました");
-  
-  // 🔴 Add this line to send an event
-  gtag('event', 'copy_output', {
-    'event_category': 'button',
-    'event_label': 'コピー',
-    'value': 1
+  navigator.clipboard.writeText(output.value).then(() => {
+    alert("コピーしました");
+    gtag('event', 'copy_output', {
+      'event_category': 'button',
+      'event_label': 'コピー',
+      'value': 1
+    });
+  }).catch(err => {
+    alert("コピーに失敗しました: " + err);
   });
 }
 </script>
