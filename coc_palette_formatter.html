@@ -136,13 +136,14 @@ function formatPalette() {
   
     // presentSkills に登録
     presentSkills.set(skill, value);
-  
-    // 「アイデア」「幸運」「知識」は dice にも分類
+
+    // 「アイデア」「幸運」「知識」は dice に分類して終了
     if (["アイデア", "幸運", "知識"].includes(skill)) {
       categories.dice.push(line);
+      return;
     }
-  
-    // 各カテゴリに分類
+    
+    // それ以外を分類
     if (["目星", "聞き耳", "図書館"].includes(skill)) {
       categories.explore.push(line);
     } else if (["回避", "こぶし", "キック", "組み付き", "頭突き", "投擲", "マーシャルアーツ", "拳銃", "サブマシンガン", "ショットガン", "マシンガン", "ライフル", "ソード", "日本刀", "ナイフ"].some(s => skill.includes(s)) || /^(小さな棍棒|大きな棍棒|小さい棍棒|大きい棍棒)/.test(skillFull)) {
@@ -156,6 +157,7 @@ function formatPalette() {
     } else {
       categories.knowledge.push(line);
     }
+
   });
 
 
